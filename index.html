@@ -8,103 +8,169 @@
 <body style="background:white">
 
 	<canvas id="wsk">
-
   </canvas>
-    <img src="./images/meg_CC_422x436.jpg" />
-  <script>
-      var timeStamps = [];
-      var dateNows = [];
+  <img src="./images/meg_CC_422x436.jpg" />
+
+	<script>
+	// per: https://stackoverflow.com/questions/37245251/canvas-draw-image-pixel-by-pixel-and-requestanimationframe-timing
+	// Question from shenkwen:
+	  //
+		// For learning purpose, I am writing some code to draw an image randomly
+		// pixel by pixel in a canvas. Here's the link (http://www.weiwei-tv.com/testO.php)
+		// for the following codes.
+		// I want the animation to be finished within 1 sec. However, as you can see
+		// from the console, it takes about 7 sec. I try smaller image, the number
+		// is closing to 1 sec.
+		// So in this case, the timing of requestAnimationFrame is not reliable.
+		// I want to know the cause. Is it because putImageData looking for one of
+		// the pixels in its data array takes too much time? Or is it because
+		// something else. I think to know when requestAnimationFrame's timing is
+		// not reliable is critical to make good animations.
+		// Moreover, is there any better way to do what I want to do?
+		//
+		// At first, I get the image's data, then I build an array whose
+		// length is equal to the number of pixels of the image, each element
+		// of the array represents one of the image's pixel. Then I shuffle
+		// this array and pop a certain number of elements for
+		// `ctx.putImageData` to draw the corresponding pixel per frame.
+
+	// Answer from MikeE:
+		// But using compositing might be faster than putImageData & drawImage...
+    //
+		// First create a second canvas in memory the size of the image.
+		//
+		// Then in each animation loop:
+		//
+		// Fill the required number of new random pixels on the second canvas:
+		// memoryContext.beginPath + memoryContext.rect(x,y,1,1) each new pixel + memoryContext.fill().
+		// Clear the main canvas.
+		// Draw the secondary canvas onto the main canvas: drawImage(memoryCanvas,0,0)
+		// Set compositing to source-atop on the main canvas.
+		// drawImage the image onto the main canvas. Compositing will cause the
+		// image to appear only where the filled pixels exist.
+		// Set compositing back to source-over on the main canvas.
+
+		// 1) load image
+		var timeStamps = [];
+    var dateNows = [];
     var c = document.getElementById('wsk');
     var ctx = c.getContext("2d"),
         img = new Image();
-    img.onload = init;
+    img.onload = init; // continue at init() when img loaded.
     img.src = "./images/meg_CC_422x436.jpg";
 
-    function formArr(w,h){
+    function formArr(w,h) {
       var arr = [];
       for (i=0;i<w*h;i++){
         arr.push(i);
       }
       return arr;
-    }
+    } // end function formArr()
 
-    function lToRArr(arr,w,h){
-      var newArr=[];
-      for (i=0;i<w;i++){
-        for (j=0;j<h;j++){
-          newArr.push(arr[j*w+i]);
-        }
-      }
-      return newArr;
-    }
+    //function lToRArr(arr,w,h){
+    //  var newArr=[];
+    //  for (i=0;i<w;i++){
+    //    for (j=0;j<h;j++){
+    //      newArr.push(arr[j*w+i]);
+    //    }
+    //  }
+    //  return newArr;
+    //}
 
-    function Point(i,w){
+		// locate pixel's X and Y base on image width
+    function Point(i,w) {
       this.x = i%w;
       this.y = Math.floor(i/w);
-    }
+    } // end function Point()
 
-    function shuffleRect(arr,w,h,x,y,dx,dy){
-      function swap(arr,x,y){
+		// shuffle the output sequence array
+    function shuffleRect(arr,w,h,x,y,dx,dy) {
+
+			function swap(arr,x,y){
         var t=arr[x];
         arr[x]=arr[y];
         arr[y]=t;
-      }
+    	}
 
-      function getIndex(i){
-        var X = new Point(i,dx-x+1).x + x;
-        var Y = new Point(i,dx-x+1).y + y;
-        return w*Y + X;
-      }
+    	function getIndex(i){
+      	var X = new Point(i,dx-x+1).x + x;
+      	var Y = new Point(i,dx-x+1).y + y;
+      	return w*Y + X;
+    	}
 
-      var m = (dx-x+1)*(dy-y+1);
-      while (m) {
-        var i =  Math.floor(Math.random()*m--); //generate random number (0,m-1)
-        swap(arr,getIndex(i),getIndex(m));
-      }
-    }
+    	var m = (dx-x+1)*(dy-y+1);
+    	while (m) {
+      	var i =  Math.floor(Math.random()*m--); //generate random number (0,m-1)
+      	swap(arr,getIndex(i),getIndex(m));
+    	}
+  	} // end function shuffleRect()
 
-    function init(){
-      var w = ctx.canvas.width = img.width;
-      var h = ctx.canvas.height = img.height;
-      //form Image Data
-      ctx.drawImage(img,0,0,w,h);
-      var imageData = ctx.getImageData(0,0,w,h);
-      ctx.clearRect(0,0,w,h);
+  	function init(){
+    	var w = ctx.canvas.width = img.width;
+    	var h = ctx.canvas.height = img.height;
 
-      //build output sequence
-      var sequence = formArr(w,h);
-      shuffleRect(sequence,w,h,0,0,w-1,h-1);
+			// 2) form Image Data string from image file By writing image file to
+			//    canvas, i.e. digitize into known data structure. And then read background
+			//    the canvas data into a local string.
+    	ctx.drawImage(img,0,0,w,h);
+    	var imageData = ctx.getImageData(0,0,w,h);
+    	ctx.clearRect(0,0,w,h);
 
-        var sec = 4;
-          var t1 = Date.now()
-          var t1 = Date.now()
-          var memoryCtx = document.createElement('canvas').getContext('2d');
-          document.body.appendChild(memoryCtx.canvas);
-          memoryCtx.canvas.width = w;
-          memoryCtx.canvas.height = h;
-          memoryCtx.fillStyle = 'rgba(0,255,255,1)'
-          var step = 0;
-          function animate(){
-            step++;
-            // if (step > 20) debugger;
-            var pointsPerFrame = Math.floor(w*h/sec/60)+1;
-            for (i=0;i<Math.min(pointsPerFrame,sequence.length);i++){
-              var j = sequence.pop();
-              memoryCtx.fillRect(new Point(j,w).x,new Point(j,w).y,1,1);
-            }
-            ctx.clearRect(0,0,w,h);
-            ctx.globalCompositeOperation = "source-over";
-            ctx.drawImage(img,0,0,w,h);
-            ctx.globalCompositeOperation = "destination-in";
-            ctx.drawImage(memoryCtx.canvas,0,0,w,h);
+    	// 3) build output sequence
+    	var sequence = formArr(w,h);
+    	shuffleRect(sequence,w,h,0,0,w-1,h-1);
 
-            if(sequence.length){requestAnimationFrame(animate)}else{
-              var t2 = Date.now();
-              console.log(t2-t1);
-            }
-          }
-          animate();
-    }
+			// 4) create a second canvas in memory the size of the image.
+			var sec = 4; //animation duration
+    	var t1 = Date.now();
+			//-------------------------------------
+			// StackOverflow suggestion per markE:
+    	//var memoryCtx = document.createElement('canvas').getContext('2d');
+    	//document.body.appendChild(memoryCtx.canvas);
+    	//memoryCtx.canvas.width = w;
+    	//memoryCtx.canvas.height = h;
+    	//memoryCtx.fillStyle = 'rgba(0,255,255,1)'
+			//-------------------------------------
+
+			var step = 0;
+			function animate() {
+      	step++;
+      	// if (step > 20) debugger;
+      	var pointsPerFrame = Math.floor(w*h/sec/60)+1;
+      	for (i=0;i<Math.min(pointsPerFrame,sequence.length);i++) {
+        	var j = sequence.pop();
+					// 5) Fill the required number of new random pixels on the second canvas:
+					//draw points for next frame
+					// orginal shenkwen:
+					ctx.putImageData( imageData, 0, 0, new Point(j,w).x, new Point(j,w).y, 1, 1 );
+					//-------------------------------------
+					// StackOverflow suggestion per markE:
+        	//memoryCtx.fillRect(new Point(j,w).x,new Point(j,w).y,1,1);
+					//-------------------------------------
+      	}
+				//-------------------------------------
+				// StackOverflow suggestion per markE:
+				// 6) Clear the main canvas.
+      	//ctx.clearRect(0,0,w,h);
+      	//ctx.globalCompositeOperation = "source-over";
+				// 7) drawImage the image onto the main canvas. Compositing will cause the
+				//    image to appear only where the filled pixels exist.
+      	//ctx.drawImage(img,0,0,w,h);
+      	//ctx.globalCompositeOperation = "destination-in";
+				// 8) Draw the secondary canvas onto the main canvas:
+      	//ctx.drawImage(memoryCtx.canvas,0,0,w,h);
+				//-------------------------------------
+
+      	if ( sequence.length ) {
+					requestAnimationFrame( animate )
+				} else {
+        	var t2 = Date.now();
+        	console.log(t2-t1);
+      	}
+    	} // end function animate()
+    	animate();
+  	} // end function init()
+
   </script>
 </body>
 </html>

@@ -1,11 +1,9 @@
 cd /users/raynovarina/sites/AtomProjects/harp/canvas-weiwei-copy-image/
 
-per: https://codepen.io/SylvaShadow/pen/vEjRde
-     From petrospap:
-     "For my needs I have make some modifications in breathing-halftone.js" at
-     https://simply4all.net/js/new/halftone.js
+per: http://www.weiwei-tv.com/testO.php
+     https://stackoverflow.com/questions/37245251/canvas-draw-image-pixel-by-pixel-and-requestanimationframe-timing
 
-Created and initialized harp app my test respositories:
+Created and initialized harp app from git respository:
 cd /users/raynovarina/sites/AtomProjects/harp/
 $ git clone https://github.com/RayNovarina/harp-canvas-petrospap-breathing-halftone.git canvas-weiwei-copy-image
 
